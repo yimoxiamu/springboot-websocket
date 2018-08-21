@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        div{
+            margin: 0px;
+        }
+        #chat-all{
+            height: 600px;
+            width: 1000px;
+        }
+        #chat-box{
+            width: 80%;
+            height: 100%;
+            display: inline-block;
+            border:  solid 1px;
+        }
+        #chat-user{
+            width: 19%;
+            height: 100%;
+            display: inline-block;
+            border:  solid 1px;
+        }
+        p{
+            margin: 0px;
+        }
+    </style>
+    <script th:src="@{/jquery-2.1.1.min.js}"></script>
+    <script>
+        $(function () {
+            //本对象的id
+            var id = null;
+            //收到消息的对象id
+            var fromId = null;
+            /*此处可以先判断当前浏览器是否支持websocket，主流的没有不支持的，我也就不判断了。
+              这里注意两点 1、ws/wss 分别对应 http/https请求 2、url中的webSocket就是在后台服务器中暴露的地址
+              */
+            var socket = new WebSocket("ws://" + window.location.hostname + ":1108/webSocket");
+            //连接打开事件
+            socket.onopen = function () {
+                console.log("Socket 已打开");
+            };
+            var mes = {
+                id: null,
+                data: null,
+                isAll: false,
+                toId: null
+            };
+            var mesAll = {
+                id: null,
+                data: null,
+                isAll: true
+            }
+
+            $('.One').click(function () {
+                var text = document.getElementById("Text").value;
+                mes.data = text;
+                mes.id = id;
+                mes.toId = fromId;
+                if (socket.readyState == 1) {
+                    console.info(JSON.stringify(mes));
+                    socket.send(JSON.stringify(mes));
+                } else {
+                    console.info("正在连接...")
+                }
+            });
+
+            $('.All').click(function () {
+                var text = document.getElementById("Text").value;
+                mesAll.data = text;
+                mesAll.id = id;
+                if (socket.readyState == 1) {
+                    socket.send(JSON.stringify(mesAll));
+                } else {
+                    console.info("正在连接...")
+                }
+            });
+            /*
+            * 当收到服务端消息是调用此方法，业务逻辑略
+            * */
+            socket.onmessage = function (ev) {
+                console.info(ev.data);
+                var object = JSON.parse(ev.data);
+                if (object.id == "server") {
+                    $("#chat-box").append("<p style='width: 100%'>"+object.data+"</p>")
+                } else {
+                    fromId = object.id;
+                }
+                document.getElementById("message").innerHTML = ev.data;
+            }
+        })
+    </script>
+</head>
+<body>
+
+<span>收到信息：</span><br>
+<span id="message"></span><br>
+<textarea id="Text" style="width: 30%;height: 100%;"></textarea><br>
+<div  id="chat-all">
+    <div id="chat-box">
+
+    </div>
+    <div  id="chat-user">
+        <div style="width: 100%;height: 30px;background: aqua"></div>
+        <div style="width: 100%;height: 30px;background: aqua"></div>
+        <div style="width: 100%;height: 30px;background: aqua"></div>
+    </div>
+</div>
+<button class="One" >单发</button>
+<button class="All">群发</button>
+<br>
+</body>
+</html>
